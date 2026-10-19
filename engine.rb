@@ -14,15 +14,13 @@ class Oriente
       exit
     end
 
-    create_controllers
-    puts "~> Scaffolded UsersController and SessionsController" if verbose
-    create_models
-    puts "~> Scaffolded User model" if verbose
-    create_views
-    puts "~> Scaffolded login and signup views" if verbose
-    add_routes
-    puts "~> Scaffolded routes" if verbose
-    # run rails db:migrate
+    create_controllers(verbose)
+    create_models(verbose)
+    create_views(verbose)
+    add_routes(verbose)
+    # TODO run rails db:migrate
+    # TODO uncomment bcrypt in the gemfile and run bundle install
+    # TODO gsub #bcrypt, bcrypt
   end
 
   def self.create_landing(verbose)
@@ -38,7 +36,7 @@ class Oriente
     File.write controller_path, controller_contents
     puts "~> Created PagesController" if verbose
 
-    view_path = File.join("app", "views", "pages", "landing.html.erb")
+    view_path = File.join("app", "views", "pages")
 
     view_contents = <<~END
     <h1>Your site</h1>
@@ -47,7 +45,13 @@ class Oriente
     <%= link_to "Log in", "/sessions/new" %>
     END
 
-    File.write view_path, view_contents
+    # TODO add duplicate checks here
+
+    FileUtils.mkdir_p view_path unless Dir.exist? view_path
+
+    view_file = File.join(view_path, "landing.html.erb")
+
+    File.write view_file, view_contents unless File.exist? view_file
 
     puts "~> Created landing page" if verbose
 
@@ -64,7 +68,7 @@ class Oriente
 
   private
 
-  def self.create_controllers verbose: false
+  def self.create_controllers(verbose)
     user_contents = <<~END
       class UsersController < ApplicationController
         def new
@@ -114,12 +118,13 @@ class Oriente
       puts "SessionsController already exists — skipping" if verbose
     else
       File.write(File.join("app", "controllers", "sessions_controller.rb"), session_contents)
+      puts "~> Scaffolded UsersController and SessionsController" if verbose
     end
   end
 
-  def self.create_models
+  def self.create_models(verbose)
     if File.exist? File.join("app", "models", "user.rb")
-      puts "User model already exists — skipping"
+      puts "User model already exists — skipping" if verbose
     else
       `rails g model User name:string email:string password:string`
     end
@@ -129,22 +134,27 @@ class Oriente
     model_contents = File.read path
 
     injection = <<~END
-      has_secure_password
-
-      validates :email, presence: true, uniqueness: true
-      validates :name, presence: true
+        has_secure_password
+  
+        validates :email, presence: true, uniqueness: true
+        validates :name, presence: true
     END
 
     unless model_contents.include? "has_secure_password"
       model_contents.gsub! "class User < ApplicationRecord\n", "class User < ApplicationRecord\n#{injection}"
       File.write path, model_contents
+      puts "~> Scaffolded User model" if verbose
     end
   end
 
-  def self.create_views
+  def self.create_views(verbose)
     views_path = File.join("app", "views")
 
-    FileUtils.mkdir File.join(views_path, "users") unless Dir.exist? File.join(views_path, "users")
+    if Dir.exist? File.join(views_path, "users")
+      puts "users view directory already exists — skipping" if verbose
+    else
+      FileUtils.mkdir File.join(views_path, "users")
+    end
 
     users_new_content = <<~END
     <h1>
@@ -178,9 +188,14 @@ class Oriente
       puts "users/new.html.erb already exists — skipping"
     else
       File.write File.join(views_path, "users", "new.html.erb"), users_new_content
+      puts "~> Scaffolded users/new.html.erb" if verbose
     end
 
-    FileUtils.mkdir File.join(views_path, "sessions")
+    if Dir.exist? File.join(views_path, "sessions")
+      puts "sessions view directory already exists — skipping" if verbose
+    else
+      FileUtils.mkdir File.join(views_path, "sessions")
+    end
 
     sessions_new_content = <<~END
     <h1>
@@ -205,21 +220,23 @@ class Oriente
       puts "sessions/new.html.erb already exists — skipping"
     else
       File.write File.join(views_path, "sessions", "new.html.erb"), sessions_new_content
+      puts "~> Scaffolded sessions/new.html.erb" if verbose
     end
   end
 
-  def self.add_routes
-    routes = File.join("config", "routes.rb")
+  def self.add_routes(verbose)
+    routes = File.join "config", "routes.rb"
     route_content = File.read routes
 
     injection = <<~END
-      resources :users, only: %i[new create]
-      resource :session, only: %i[new create destroy]
+        resources :users, only: %i[new create]
+        resource :session, only: %i[new create destroy]
     END
 
     unless route_content.include? "resources :users"
       route_content.gsub!("Rails.application.routes.draw do", "Rails.application.routes.draw do\n#{injection}")
       File.write routes, route_content
+      puts "~> Scaffolded routes" if verbose
     end
   end
 end

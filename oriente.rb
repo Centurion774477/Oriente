@@ -23,7 +23,7 @@ if command == "Run Oriente"
 
   if create_landing then Oriente.create_landing(verbosity) end
   puts "Done scaffolding!"
-  puts "Note: in app/controllers/users_controller.rb, you have to fill in your redirect."
+  puts "Note: in app/controllers/users_controller.rb, you have to fill in the redirect yourself, since it is app specific."
   puts "Cheers!"
 else
   puts <<~END
@@ -41,5 +41,17 @@ else
     - SessionsController#new
     - SessionsController#create
     - SessionsController#destroy
+
+    Routes:
+    - resources :users, only: %i[new create]
+    - resource :session, only: %i[new create destroy]
+
+    If you choose to generate a landing page too, you will also receive the following:
+    
+    - PagesController
+    - PagesController#landing
+    - pages/landing.html.erb
+
+    Inside the view, there will be a simple header and links to signup and login.
   END
 end
