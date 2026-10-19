@@ -8,5 +8,10 @@ With Oriente, you get:
 - Sign up and log in page
 - routes for signing up and logging in
 
-Oriente is quite pragmatic as well — Oriente follows Convention over Configuration, 
-so instead of being asked "Do you want to create UsersController?", it just does it.
+You can also choose to scaffold a landing page. This will add a couple things that help you get started even faster:
+- PagesController with a method
+- pages/landing.html.erb
+- Links to the sign up and log in page
+- root path is set to PagesController#landing
+
+I understand that this isn't for everyone, which is why I made it optional.
