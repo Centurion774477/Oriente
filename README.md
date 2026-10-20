@@ -7,6 +7,7 @@ With Oriente, you get:
 - Full User model
 - Sign up and log in page
 - routes for signing up and logging in
+- current_user helper method defined in ApplicationController
 
 You can also choose to scaffold a landing page. This will add a couple things that help you get started even faster:
 - PagesController with a method
@@ -15,3 +16,7 @@ You can also choose to scaffold a landing page. This will add a couple things th
 - root path is set to PagesController#landing
 
 I understand that this isn't for everyone, which is why I made it optional.
+
+Everything scaffolded in Oriente comes from what I've needed in my own apps. 
+It's not designed for really specific apps where you may need more authentication, 
+but for general apps Oriente will save you ~15 minutes of work.
