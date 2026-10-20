@@ -18,9 +18,44 @@ class Oriente
     create_models(verbose)
     create_views(verbose)
     add_routes(verbose)
-    # TODO run rails db:migrate
-    # TODO uncomment bcrypt in the gemfile and run bundle install
-    # TODO gsub #bcrypt, bcrypt
+
+    `rails db:migrate`
+
+    unless File.exist? "Gemfile"
+      content = File.read "Gemfile"
+      content.gsub!('# gem "bcrypt", "~> 3.1.7"', 'gem "bcrypt", "~> 3.1.7"')
+      File.write("Gemfile", content)
+    end
+
+    `bundle install --quiet`
+
+    add_current_user_helper(verbose)
+  end
+
+  def self.add_current_user_helper(verbose)
+    path = File.join "app", "controllers", "application_controller.rb"
+
+    return unless File.exist? path
+
+    contents = File.read path
+
+    return if contents.include? "current_user"
+
+    injection = <<'INJECTION'
+  helper_method :current_user
+
+  private
+
+  def current_user
+    @current_user ||= User.find_by(id: session[:user_id])
+  end
+INJECTION
+
+    contents.gsub! "class ApplicationController < ActionController::Base", "class ApplicationController < ActionController::Base\n#{injection}"
+
+    File.write path, contents
+
+    puts "\n~> Added current_user helper method to ApplicationController" if verbose
   end
 
   def self.create_landing(verbose)
@@ -57,13 +92,15 @@ class Oriente
 
     routes_path = File.join("config", "routes.rb")
 
-    routes_contents = File.read routes_path
+    unless File.exist? routes_path
+      routes_contents = File.read routes_path
 
-    routes_contents.gsub!("Rails.application.routes.draw do", "Rails.application.routes.draw do\n  root to: 'pages#landing'\n")
+      routes_contents.gsub!("Rails.application.routes.draw do", "Rails.application.routes.draw do\n  root to: 'pages#landing'\n")
 
-    File.write routes_path, routes_contents
+      File.write routes_path, routes_contents
 
-    puts "~> added root route"
+      puts "~> added root route"
+    end
   end
 
   private
@@ -131,19 +168,21 @@ class Oriente
 
     path = File.join("app", "models", "user.rb")
 
-    model_contents = File.read path
+    unless File.exist? path
+      model_contents = File.read path
 
-    injection = <<~END
-        has_secure_password
-  
-        validates :email, presence: true, uniqueness: true
-        validates :name, presence: true
-    END
+      injection = <<~END
+          has_secure_password
+    
+          validates :email, presence: true, uniqueness: true
+          validates :name, presence: true
+      END
 
-    unless model_contents.include? "has_secure_password"
-      model_contents.gsub! "class User < ApplicationRecord\n", "class User < ApplicationRecord\n#{injection}"
-      File.write path, model_contents
-      puts "~> Scaffolded User model" if verbose
+      unless model_contents.include? "has_secure_password"
+        model_contents.gsub! "class User < ApplicationRecord\n", "class User < ApplicationRecord\n#{injection}"
+        File.write path, model_contents
+        puts "~> Scaffolded User model" if verbose
+      end
     end
   end
 
@@ -226,17 +265,20 @@ class Oriente
 
   def self.add_routes(verbose)
     routes = File.join "config", "routes.rb"
-    route_content = File.read routes
 
-    injection = <<~END
-        resources :users, only: %i[new create]
-        resource :session, only: %i[new create destroy]
-    END
+    unless File.exist? routes
+      route_content = File.read routes
 
-    unless route_content.include? "resources :users"
-      route_content.gsub!("Rails.application.routes.draw do", "Rails.application.routes.draw do\n#{injection}")
-      File.write routes, route_content
-      puts "~> Scaffolded routes" if verbose
+      injection = <<~END
+          resources :users, only: %i[new create]
+          resource :session, only: %i[new create destroy]
+      END
+
+      unless route_content.include? "resources :users"
+        route_content.gsub!("Rails.application.routes.draw do", "Rails.application.routes.draw do\n#{injection}")
+        File.write routes, route_content
+        puts "~> Scaffolded routes" if verbose
+      end
     end
   end
 end
