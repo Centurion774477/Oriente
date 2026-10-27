@@ -116,7 +116,6 @@ INJECTION
           @user = User.new user_params
 
           if @user.save
-            @project = Project.create(user_id: @user.id)
             session[:user_id] = @user.id
             # add your redirect here!
           else
